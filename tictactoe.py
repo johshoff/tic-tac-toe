@@ -23,8 +23,7 @@ def streaks(board):
 def find_winner(board):
 	for streak in streaks(board):
 		if streak[0] == streak[1] == streak[2]:
-			if streak[0] == 'x': return 'x'
-			elif streak[0] == 'o': return 'o'
+			if streak[0] != ' ': return streak[0]
 	return None
 
 def finished(board):
