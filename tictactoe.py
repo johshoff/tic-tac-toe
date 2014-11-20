@@ -1,3 +1,5 @@
+# Python 3!
+
 import random
 
 def show(board):
