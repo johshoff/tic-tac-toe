@@ -64,7 +64,13 @@ def score(board, player, to_play):
 
 def best_move(board, player):
 	print("CALCULATING", end="", flush=True)
-	moves = [(pos, score(put(board, player, pos), player, other_player(player))) for pos in free_pos(board)]
+
+	# Recursively consider all possibilities
+	moves = [
+		(pos, score(put(board, player, pos), player, other_player(player)))
+		for pos in free_pos(board)
+	]
+
 	best_score = max(y for x, y in moves)
 	good_moves = [x for x, y in moves if y == best_score]
 	print("\r           \r", end="", flush=True)
