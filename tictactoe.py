@@ -1,4 +1,4 @@
-# Python 3!
+#!/usr/bin/env python3
 
 import random
 
@@ -57,8 +57,14 @@ def memoize(func):
 
 	return new_func
 
-@memoize
+past_results = {}
+
 def score(board, player, to_play):
+	key = lowest_symmetric_board(board), player, to_play
+	#key = board, player, to_play
+	if key in past_results:
+		return past_results[key]
+
 	winner = find_winner(board)
 	if winner: return 1 if winner == player else 0
 
@@ -76,7 +82,11 @@ def score(board, player, to_play):
 	# introducing chances for losing.
 
 	acc = max if player == to_play else min
-	return acc(scores)
+	result = acc(scores)
+
+	past_results[key] = result
+
+	return result
 
 def best_move(board, player):
 	print("CALCULATING", end="", flush=True)
@@ -92,22 +102,114 @@ def best_move(board, player):
 	print("\r           \r", end="", flush=True)
 	return random.choice(good_moves)
 
+def rotated(board):
+	'''Mirror board vertically
 
-board = "   " + "   " + "   "
-while not finished(board):
+	>>> board = 'xox xooxo'
+	>>> board != rotated(board)
+	True
+	>>> board == rotated(rotated(rotated(rotated(board))))
+	True
+	'''
+	# 012    630
+	# 345 -> 741
+	# 678    852
+	return board[6] + board[3] + board[0] +\
+	       board[7] + board[4] + board[1] +\
+	       board[8] + board[5] + board[2]
+
+def mirrored(board):
+	'''Mirror board vertically
+
+	>>> mirrored('xox xooxo')
+	'oxo xoxox'
+	>>> board = 'xox xooxo'
+	>>> board == mirrored(mirrored(board))
+	True
+	'''
+	# 012    678
+	# 345 -> 345
+	# 678    012
+	return board[6:8+1] +\
+	       board[3:5+1] +\
+	       board[0:2+1]
+
+def player_value(player):
+	if player == ' ': return 0
+	if player == 'x': return 1
+	if player == 'o': return 2
+
+def board_value(board):
+	mul = 1
+	value = 0
+	for player in board:
+		value += player_value(player) * mul
+		mul *= 3
+	return value
+
+def all_rotations(board):
+	'''Return all rotations of a board (may include duplicates)
+
+	>>> sorted(all_rotations('x o      '))
+	['      o x', '  x     o', 'o     x  ', 'x o      ']
+	'''
+	b = board
+	for i in range(4):
+		yield b
+		b = rotated(b)
+
+def symmetric_boards(board):
+	boards = set()
+	boards.update(all_rotations(board))
+	boards.update(all_rotations(mirrored(board)))
+	return boards
+
+@memoize
+def lowest_symmetric_board(board):
+	'''Return the symmetric board with the lowest board_value
+
+	>>> lowest_symmetric_board('  o     x')
+	'o x      '
+	'''
+	return min((board_value(sym), sym) for sym in symmetric_boards(board))[1]
+
+def test():
+	import doctest
+	import sys
+	x = doctest.testmod()
+	if x.failed > 0:
+		sys.exit(1)
+
+def ai_player(board, token):
+	move = best_move(board, token)
+	print("%s's move [0-8]: %i" % (token.capitalize(), move))
+	return move
+
+def human_player(board, token):
+	while True:
+		move = int(input("%s's move [0-8]: " % token.capitalize()))
+		if board[move] == ' ':
+			return move
+		print('Illegal move')
+
+def play(player_x, player_o, current_player='x'):
+	board = "   " + "   " + "   "
+	do_move = { 'x': player_x, 'o': player_o }
+
+	while not finished(board):
+		show(board)
+		move = do_move[current_player](board, current_player)
+		board = put(board, current_player, move)
+		if finished(board): break;
+
+		current_player = other_player(current_player)
+
 	show(board)
-	move = int(input("X's move [0-8]: "))
-	if board[move] != ' ': continue
-	board = put(board, 'x', move)
-	if finished(board): break;
+	if find_winner(board):
+		print("%s wins" % find_winner(board))
+	else:
+		print("Tie")
 
-	show(board)
-	move = best_move(board, 'o')
-	print("O's move [0-8]: %i" % move)
-	board = put(board, 'o', move)
+play(human_player, ai_player, 'x')
 
-show(board)
-if find_winner(board):
-	print("%s wins" % find_winner(board))
-else:
-	print("Tie")
+print('Memoized %d scores' % len(past_results))
