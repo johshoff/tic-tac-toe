@@ -43,6 +43,21 @@ def moves(board, to_play):
 def put(board, player, pos):
 	return board[:pos] + player + board[pos+1:]
 
+def memoize(func):
+	past_results = {}
+
+	def new_func(*args):
+		if args in past_results:
+			return past_results[args]
+
+		result = func(*args)
+		past_results[args] = result
+
+		return result
+
+	return new_func
+
+@memoize
 def score(board, player, to_play):
 	winner = find_winner(board)
 	if winner: return 1 if winner == player else 0
